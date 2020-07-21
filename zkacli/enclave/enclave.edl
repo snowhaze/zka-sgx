@@ -1,0 +1,34 @@
+enclave {
+	include "enclave.h"
+
+	trusted {
+		public enclave_error_t generate(
+			[user_check]							pub_key_s*			pks,
+													uint32_t			pk_count,
+													uint32_t			reserve_count,
+													uint32_t			tokens_per_set,
+													uint32_t			oversize_numerator,
+													uint32_t			oversize_denominator,
+													sgx_target_info_t	dest,
+			[out, count=1]							sgx_report_t*		report,
+			[out, count=1]							zka_report_s*		zka_report,
+			[user_check]							reserve_buf_s*		reserve_buffer,
+			[user_check]							result_buf_s*		result_buffer,
+			[user_check]							void*				output,
+													zka_output_type_t	output_type,
+													uint32_t			sealed_size,
+			[out, count=1, size=sealed_size] 		sgx_sealed_data_t*	sealed_keys
+		);
+		public enclave_error_t reencrypt(
+													pub_key_s			pk,
+													uint32_t			index,
+													uint32_t			tokens_per_set,
+													size_t				reserve_buffer_size,
+													size_t				result_buffer_size,
+													uint32_t			sealed_size,
+			[in, count=1, size=sealed_size]			sgx_sealed_data_t*	sealed_keys,
+			[in, count=1, size=reserve_buffer_size]	reserve_buf_s*		reserve_buf,
+			[out, count=1, size=result_buffer_size]	result_buf_s*		result
+		);
+	};
+};
