@@ -45,7 +45,7 @@ Then run the following command:
 **Linux**
 
 ```
-$ python3 verify.py <verification blob>
+$ python3 verify.py -a <verification blob>
 ```
 
 **Windows**
@@ -137,7 +137,7 @@ $ cd zka-sgx/zkacli
 Continue by running the script `verify.py` with the `-b` flag specifying the path in which the signature and public key should be stored, e.g.
 
 ```
-$ python3 ../verify.py -b ../ <verification blob>
+$ python3 ../verify.py -b .. <verification blob>
 ```
 
 > Make sure you have the same tool versions as we used to compile the enclace and check out the same commit. The tool versions and commit hash are given in the result from above.
@@ -149,7 +149,7 @@ $ make release-1 SODIUM_PATH=../../libsodium
 Run make again
 
 ```
-$ cp ../enclave.signdata.sig ../sign.pem .
+$ cp ../enclave.signdata.sig ../enclave.signdata ../sign.pem .
 $ make release-2 SODIUM_PATH=../../libsodium
 ```
 
@@ -172,4 +172,4 @@ Disclaimer: The GPL license is *not* a free license and GPL licensed software is
 Important: The use of Intel SGX products requires consent to Intel’s terms and conditions and imposes various restrictions on possible usage. Depending on the circumstances and the use case, Intel’s terms might not be compatible with the GPL license. Before using this code, make sure that the GPL license is compatible with your intended usage.
 
 ## Questions
-Get in touch with us if you'd like to know more or have questions about SnowHaze VPN. [Contact Us](https://snowhaze.com/contact.html)
+Get in touch with us if you'd like to know more or have questions about SnowHaze VPN. [Contact Us](https://snowhaze.com/en/support-contact.html)
