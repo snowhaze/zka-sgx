@@ -127,10 +127,9 @@ $ chown -R <user> sgxsdk/
 $ source sgxsdk/environment
 ```
 
-Clone the latest libsodium and change directory
+Change directory
 
 ```
-$ git clone https://github.com/jedisct1/libsodium --branch stable
 $ cd zka-sgx/zkacli
 ```
 
@@ -143,14 +142,14 @@ $ python3 ../verify.py -b .. <verification blob>
 > Make sure you have the same tool versions as we used to compile the enclace and check out the same commit. The tool versions and commit hash are given in the result from above.
 
 ```
-$ make release-1 SODIUM_PATH=../../libsodium
+$ make release-1
 ```
 
 Run make again
 
 ```
 $ cp ../enclave.signdata.sig ../enclave.signdata ../sign.pem .
-$ make release-2 SODIUM_PATH=../../libsodium
+$ make release-2
 ```
 
 You have now build the same enclave as we did to generate your tokens. Check this by comparing the `enclave_hash` in the file `enclave_dumpfile` with the hash of the `Verified Chain for Enclave` resulting from the `verify.py` script.

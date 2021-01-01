@@ -1,11 +1,11 @@
-SODIUM_COMMIT := 2b5f8f2b6810121c2d9a8cc8a392e01f4d3de433
+SODIUM_COMMIT := bfcfa87f2d211bc072a56b203015122f7678bf04
 
 MITIGATION-CVE-2020-0551 := LOAD
 
 include $(SGX_SDK)/buildenv.mk
 
 SDK := $(SGX_SDK)
-SODIUM_PATH ?= $(HOME)/libsodium
+SODIUM_PATH ?= $(CURDIR)/libsodium
 MODE ?= PRERELEASE
 
 LIB := $(SDK)/lib64
@@ -136,9 +136,10 @@ wrapper/%.o: wrapper/%.c wrapper/enclave_u.h enclave/enclave.h enclave_dumpfile 
 	$(eval COMPILER_VERSION=$(shell $(CC) --version | head -n 1))
 	$(eval ENCLAVE_UNSIGNED_SHA256=$(shell sha256sum $(ENC) | cut -d ' ' -f1))
 	$(eval ENCLAVE_SIGNED_SHA256=$(shell sha256sum $(ENC_SIG) | cut -d ' ' -f1))
-	$(eval SIGNDATA_BASE64=$(shell base64 -w0 $(ENC_SIGNATURE)))
+	$(eval SIGNDATA_SIG_BASE64=$(shell base64 -w0 $(ENC_SIGNATURE)))
+	$(eval SIGNDATA_BASE64=$(shell base64 -w0 $(ENC_SIG_DATA)))
 	$(eval SIGN_PEM_BASE64=$(shell base64 -w0 $(SIG_KEY)))
-	@$(CC) $(APP_FLAGS) -DSODIUM_COMMIT='"'$(SODIUM_COMMIT)'"' -DSGX_ENCLAVE_HASH='"'$(SGX_ENCLAVE_HASH)'"' -DBUILD_DATE='"'$(BUILD_DATE)'"' -DGIT_COMMIT='"'$(GIT_COMMIT)'"' -DCOMPILER_VERSION='"'"$(COMPILER_VERSION)"'"' -DSDK_VERSION='"'$(SDK_VERSION)'"' -DENCLAVE_UNSIGNED_SHA256='"'$(ENCLAVE_UNSIGNED_SHA256)'"' -DENCLAVE_SIGNED_SHA256='"'$(ENCLAVE_SIGNED_SHA256)'"' -DSIGNDATA_BASE64='"'$(SIGNDATA_BASE64)'"' -DSIGN_PEM_BASE64='"'$(SIGN_PEM_BASE64)'"' -c $< -o $@
+	@$(CC) $(APP_FLAGS) -DSODIUM_COMMIT='"'$(SODIUM_COMMIT)'"' -DSGX_ENCLAVE_HASH='"'$(SGX_ENCLAVE_HASH)'"' -DBUILD_DATE='"'$(BUILD_DATE)'"' -DGIT_COMMIT='"'$(GIT_COMMIT)'"' -DCOMPILER_VERSION='"'"$(COMPILER_VERSION)"'"' -DSDK_VERSION='"'$(SDK_VERSION)'"' -DENCLAVE_UNSIGNED_SHA256='"'$(ENCLAVE_UNSIGNED_SHA256)'"' -DENCLAVE_SIGNED_SHA256='"'$(ENCLAVE_SIGNED_SHA256)'"' -DSIGNDATA_BASE64='"'$(SIGNDATA_BASE64)'"' -DSIGNDATA_SIG_BASE64='"'$(SIGNDATA_SIG_BASE64)'"' -DSIGN_PEM_BASE64='"'$(SIGN_PEM_BASE64)'"' -c $< -o $@
 	@echo "CC <= $<"
 
 $(APP): wrapper/enclave_u.o $(APP_OBJ)
@@ -152,7 +153,10 @@ enclave/enclave_t.h: enclave/enclave.edl crypto/libsodium_enclave.a
 
 enclave/enclave_t.c: enclave/enclave_t.h
 
-crypto/libsodium.a: crypto/Makefile.in crypto/compat.c enclave/enclave.h
+$(SODIUM_PATH):
+	@git clone https://github.com/jedisct1/libsodium.git $(SODIUM_PATH)
+
+crypto/libsodium.a: $(SODIUM_PATH) crypto/compat.c enclave/enclave.h
 	@cd $(SODIUM_PATH) && git clean -xf
 	@cd $(SODIUM_PATH) && git checkout ./**
 	@cd $(SODIUM_PATH) && git fetch
@@ -163,7 +167,7 @@ crypto/libsodium.a: crypto/Makefile.in crypto/compat.c enclave/enclave.h
 	@cp $(SODIUM_PATH)/src/libsodium/.libs/libsodium.a crypto
 	@echo "GEN => $@"
 
-crypto/libsodium_enclave.a: crypto/Makefile.in crypto/compat.c enclave/enclave.h
+crypto/libsodium_enclave.a: $(SODIUM_PATH) crypto/Makefile.in crypto/compat.c enclave/enclave.h
 	@cd $(SODIUM_PATH) && git clean -xf
 	@cd $(SODIUM_PATH) && git checkout ./**
 	@cd $(SODIUM_PATH) && git fetch

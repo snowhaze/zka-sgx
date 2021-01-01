@@ -417,7 +417,7 @@ void version_cmd(int argc, char* argv[]) {
 
 	puts("OK");
 	puts("Component               Version");
-	puts("zkacli                  1.0 (" GIT_COMMIT ")");
+	puts("zkacli                  1.0.1 (" GIT_COMMIT ")");
 	puts("libsodium               'stable' Branch (" SODIUM_COMMIT ")");
 	puts("Enclave                 " SGX_ENCLAVE_HASH);
 	puts("SGX SDK                 " SDK_VERSION);
@@ -425,7 +425,8 @@ void version_cmd(int argc, char* argv[]) {
 	puts("Build Date              " BUILD_DATE);
 	puts("Unsigned Enclave        " ENCLAVE_UNSIGNED_SHA256);
 	puts("Signed Enclave          " ENCLAVE_SIGNED_SHA256);
-	puts("enclave.signdata.sig    " SIGNDATA_BASE64);
+	puts("enclave.signdata.sig    " SIGNDATA_SIG_BASE64);
+	puts("enclave.signdata        " SIGNDATA_BASE64);
 	puts("sign.pem                " SIGN_PEM_BASE64);
 }
 

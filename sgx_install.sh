@@ -1,29 +1,32 @@
-VERSION=2.10
-DRIVER=sgx_linux_x64_driver_2.6.0_602374c.bin
-SDK=sgx_linux_x64_sdk_2.10.100.2.bin
-BUILD_TOOLS_VERSION=r2
+VERSION=2.12
+DRIVER=sgx_linux_x64_driver_2.11.0_4505f07.bin
+SDK=sgx_linux_x64_sdk_2.12.100.3.bin
+BUILD_TOOLS_VERSION=r3
+
+UBUNTU_VERSION=20.04
+UBUNTU_CODENAME=focal
 
 sudo apt-get install dkms
 
-wget https://download.01.org/intel-sgx/sgx-linux/$VERSION/distro/ubuntu18.04-server/$DRIVER
-wget https://download.01.org/intel-sgx/sgx-linux/$VERSION/distro/ubuntu18.04-server/$SDK
+wget https://download.01.org/intel-sgx/sgx-linux/$VERSION/distro/ubuntu$UBUNTU_VERSION-server/$DRIVER
+wget https://download.01.org/intel-sgx/sgx-linux/$VERSION/distro/ubuntu$UBUNTU_VERSION-server/$SDK
 wget https://download.01.org/intel-sgx/sgx-linux/$VERSION/as.ld.objdump.gold.$BUILD_TOOLS_VERSION.tar.gz
 
 tar xf as.ld.objdump.gold.$BUILD_TOOLS_VERSION.tar.gz
 
-sudo chown root:root external/toolset/ubuntu18.04/*
+sudo chown root:root external/toolset/ubuntu$UBUNTU_VERSION/*
 
-sudo mv external/toolset/ubuntu18.04/{as,ld,ld.gold,objdump} /usr/local/bin
+sudo mv external/toolset/ubuntu$UBUNTU_VERSION/{as,ld,ld.gold,objdump} /usr/local/bin
 
 chmod +x $DRIVER $SDK
 
 sudo apt-get update
 sudo apt-get install libssl-dev libcurl4-openssl-dev libprotobuf-dev
-sudo apt-get install build-essential python
+sudo apt-get install build-essential python-is-python3
 
 sudo ./$DRIVER
 
-echo 'deb [arch=amd64] https://download.01.org/intel-sgx/sgx_repo/ubuntu bionic main' | sudo tee /etc/apt/sources.list.d/intel-sgx.list
+echo "deb [arch=amd64] https://download.01.org/intel-sgx/sgx_repo/ubuntu $UBUNTU_CODENAME main" | sudo tee /etc/apt/sources.list.d/intel-sgx.list
 wget -qO - https://download.01.org/intel-sgx/sgx_repo/ubuntu/intel-sgx-deb.key | sudo apt-key add -
 sudo apt-get update
 sudo apt-get install libsgx-launch libsgx-urts libsgx-epid libsgx-quote-ex
