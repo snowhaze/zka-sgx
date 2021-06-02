@@ -35,12 +35,12 @@ Then run the following command:
 **macOS**
 
 ```
-% python3 verify.py -o apple-compat -a <verification blob>
+$ python3 verify.py -o apple-compat -a <verification blob>
 ```
 
 `-o` specifies the location of OpenSSL
 
-`apple-compat` uses the Apple library because OpenSSL is not installed by default on macOS and iOS.
+`apple-compat` emulates OpenSSL using Apple libraries because OpenSSL is not installed by default on macOS and iOS.
 
 **Linux**
 
@@ -97,21 +97,17 @@ In case a `warning` is raised, the warning will appear. Additionally, the implic
 RESULT:  Verified Chain for Enclave db156b322ac5e8814d03f02c5154bed5cc9706ae22af69c1f1f4bdad3ee8be7a
 NOTE:
   Tool Versions:
-  - zkacli: 0.6 (8d499c446398a9b42f4e59b986c5ba11c13a8ae4)
-  - libsodium: 'stable' Branch (e6d0a57061bc06fa0bb0ebb2214955ab39cfa1fa)
-  - SGX SDK: 2.9.101.2
+  - zkacli: 1.0 (a4b7f4ac497b03697c0558bb0d39c97ae443cf6a)
+  - libsodium: 'stable' Branch (2b5f8f2b6810121c2d9a8cc8a392e01f4d3de433)
+  - SGX SDK: 2.10.100.2
   - Compiler: cc (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0
-  - Build Date: 2020-06-17T13:18:47+00:00
-  - Unsigned Enclave: aa6810377e67404ba2df759f28945e094008a4baff6852d7f0d4bb85687a2641
-  - Signed Enclave: 76dcb287fc4a94c71aacc0b70eb90444786a4934ac39095c18b807b50b7407c7
-  - enclave.signdata.sig: bfe9cbf258d1e262c350eb4c51e11658b1289bd7753ae716c24f8f7eeddf4f54
-  - sign.pem: 715c09fd9aa1815f20a9733422c8d46894637330ae5d13b5c36fddcf6ab53777
+  - Signed Enclave: ce422cc914757a4d114e287daec538f7dce97096a5b73c6134c0a28fb2f9d33c
 ```
 The last result is the confirmation from Intel that the hash of the enclave has not been altered and that the enclave therefore still contains the same code. The tools needed to build the enclave are listed under `NOTE`.
 
 ## Building the Enclave
 
-To build the enclave, you will need to run the following code on an Ubuntu 18.04 machine (same as where we built the enclave for reproducibility).
+To build the enclave, you will need to run the following code on an Ubuntu 20.04 LTS machine (same as where we built the enclave for reproducibility).
 
 Clone the repository
 
@@ -139,13 +135,14 @@ Continue by running the script `verify.py` with the `-b` flag specifying the pat
 $ python3 ../verify.py -b .. <verification blob>
 ```
 
-> Make sure you have the same tool versions as we used to compile the enclace and check out the same commit. The tool versions and commit hash are given in the result from above.
+Make sure you have the same tool versions as we used to compile the enclave and check out the same commit. The tool versions and commit hash are given in the result from above.
 
 ```
+$ git checkout <commit hash>
 $ make release-1
 ```
 
-Run make again
+Copy the required files into place and run make again
 
 ```
 $ cp ../enclave.signdata.sig ../enclave.signdata ../sign.pem .
@@ -159,6 +156,8 @@ To print the enclave hash from `enclave_dumpfile`, run
 ```
 awk -f get_enclave_hash.awk enclave_dumpfile
 ```
+
+and check that it matches the `Signed Enclave` hash displayed by the verification script.
 
 Congratulations, you verified the integrity of the enclave!
 

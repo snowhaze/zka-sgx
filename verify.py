@@ -18,11 +18,11 @@ import re
 
 class ed25519:
 	"""adapted from https://ed25519.cr.yp.to/python/ed25519.py:
-	- replaced / with // (original was for python2)
-	- replaced ''.join() with bytes() (original was for python2)
-	- removed unnecessary ord() and chr() (original was for python2)
-	- added some self. and self, (original was a separate module instead of a class)
-	- moved all constant initializations to __init__ (original was a separate module instead of a class)
+	- replaced / with // (original is for python2)
+	- replaced ''.join() with bytes() (original is for python2)
+	- removed unnecessary ord() and chr() (original is for python2)
+	- added some self. and self, (original is a separate module instead of a class)
+	- moved all constant initializations to __init__ (original is a separate module instead of a class)
 	- moved computations which don't depend on pk to __init__ (for performance)
 	- replaced expmod with the builtin pow (for performance)
 	- made checkvalid return a bool instead of throwing an exception
@@ -176,8 +176,9 @@ revocation_check = False
 limit = None
 add_certs = False
 build_files_directory = None
+use_nacl = False
 try:
-	options = getopt(sys.argv[1:], "o:c:l:b:rhvna", ["openssl=", "cache=", "help", "version", "revocation-checks", "no-network", "limit=", "add-tls-certs", "build-files="])
+	options = getopt(sys.argv[1:], "o:c:l:b:e:rhvna", ["ed25519=", "openssl=", "cache=", "help", "version", "revocation-checks", "no-network", "limit=", "add-tls-certs", "build-files="])
 except Exception:
 	fail("Incorrect Usage - See `" + sys.argv[0] + " --help` for help")
 except:
@@ -241,15 +242,29 @@ for option in options[0]:
                           not been revoked.
 
 -b, --build-files <path>  The directory into which files required to reproduce
-                          the enclave build should be written.""")
+                          the enclave build should be written.
+
+-e, --ed25519 <lib>       The library used to verify the Ed25519 signatures.
+                          Supported values are:
+                          - 'built-in': The default. A version of the reference
+                              implementation. delivered with this script.
+                          - 'nacl': Use the PyNaCl library. PyNaCl must be
+                              installed separately.""")
 		sys.exit(0)
 	elif option[0] == "-v" or option[0] == "--version":
-		print("ZKA Attestation Verification Tool Version 1.0.2")
+		print("ZKA Attestation Verification Tool Version 1.1")
 		sys.exit(0)
 	elif option[0] == "-r" or option[0] == "--revocation-checks":
 		revocation_check = True
 	elif option[0] == "-b" or option[0] == "--build-files":
 		build_files_directory = option[1]
+	elif option[0] == "-e" or option[0] == "--ed25519":
+		if option[1] == "built-in":
+			use_nacl = False
+		elif option[1] == "nacl":
+			use_nacl = True
+		else:
+			fail("Incorrect Usage - See `" + sys.argv[0] + " --help` for help")
 	else:
 		fail("Incorrect Usage - See `" + sys.argv[0] + " --help` for help")
 if len(options[1]) != 1 or (no_network and cache_files == None):
@@ -267,6 +282,13 @@ verification_blob = verification_blob[1:]
 if len(verification_blob) < 64:
 	fail("Invalid Verification Blob")
 
+if use_nacl:
+	try:
+		from nacl.signing import VerifyKey
+		from nacl.exceptions import BadSignatureError
+	except ImportError:
+		fail("PyNacl Unavailable")
+
 # setup SSLContext used for downloading files
 sslContext = ssl.create_default_context()
 sslContext.options = ssl.OP_SINGLE_DH_USE | ssl.OP_SINGLE_ECDH_USE | ssl.OP_NO_COMPRESSION
@@ -279,7 +301,11 @@ else:
 	sslContext.options |= ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3 | ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1
 
 if add_certs:
-	sslContext.load_verify_locations(cadata="""-----BEGIN CERTIFICATE-----
+	sslContext.load_verify_locations(cadata="""
+USERTrust RSA Certification Authority
+Available as 'USERTrust RSA Certification Authority' on
+https://support.sectigo.com/articles/Knowledge/Sectigo-Intermediate-Certificates
+-----BEGIN CERTIFICATE-----
 MIIF3jCCA8agAwIBAgIQAf1tMPyjylGoG7xkDjUDLTANBgkqhkiG9w0BAQwFADCB
 iDELMAkGA1UEBhMCVVMxEzARBgNVBAgTCk5ldyBKZXJzZXkxFDASBgNVBAcTC0pl
 cnNleSBDaXR5MR4wHAYDVQQKExVUaGUgVVNFUlRSVVNUIE5ldHdvcmsxLjAsBgNV
@@ -313,6 +339,11 @@ VXyNWQKV3WKdwrnuWih0hKWbt5DHDAff9Yk2dDLWKMGwsAvgnEzDHNb842m1R0aB
 L6KCq9NjRHDEjf8tM7qtj3u1cIiuPhnPQCjY/MiQu12ZIvVS5ljFH4gxQ+6IHdfG
 jjxDah2nGN59PRbxYvnKkKj9
 -----END CERTIFICATE-----
+
+
+GlobalSign Root CA
+Available as 'R1 GlobalSign Root Certificate' on
+https://support.globalsign.com/ca-certificates/root-certificates/globalsign-root-certificates
 -----BEGIN CERTIFICATE-----
 MIIDdTCCAl2gAwIBAgILBAAAAAABFUtaw5QwDQYJKoZIhvcNAQEFBQAwVzELMAkG
 A1UEBhMCQkUxGTAXBgNVBAoTEEdsb2JhbFNpZ24gbnYtc2ExEDAOBgNVBAsTB1Jv
@@ -624,7 +655,8 @@ all_keys = index_json["runs"]
 # search for matching public key
 key_hash = None
 try:
-	ed25519sig = ed25519(verification_blob[:64], verification_blob[64:])
+	if not use_nacl:
+		ed25519sig = ed25519(verification_blob[:64], verification_blob[64:])
 except Exception:
 	fail("Invalid Verification Blob")
 
@@ -652,13 +684,27 @@ for k in all_keys[:limit]:
 		continue
 
 	# check if one of them has signed the verification blob
-	try:
-		primary_sig = ed25519sig.checkvalid(k[32:32+32])
-		seccondary_sig = ed25519sig.checkvalid(k[64:64+32])
-	except Exception:
-		fail("Invalid Signature or Public Key")
-	except:
-		fail("Failed to Validate Signature")
+	if use_nacl:
+		try:
+			primary_key = VerifyKey(k[32:32+32])
+			primary_key.verify(verification_blob[64:], verification_blob[:64])
+			primary_sig = True
+		except BadSignatureError:
+			primary_sig = False
+		try:
+			seccondary_key = VerifyKey(k[64:64+32])
+			seccondary_key.verify(verification_blob[64:], verification_blob[:64])
+			seccondary_sig = True
+		except BadSignatureError:
+			seccondary_sig = False
+	else:
+		try:
+			primary_sig = ed25519sig.checkvalid(k[32:32+32])
+			seccondary_sig = ed25519sig.checkvalid(k[64:64+32])
+		except Exception:
+			fail("Invalid Signature or Public Key")
+		except:
+			fail("Failed to Validate Signature")
 
 	# if one of the keys has signed the verification blob, display the corresponding enclave settings and stop the search
 	if primary_sig != seccondary_sig:
@@ -683,6 +729,8 @@ for k in all_keys[:limit]:
 			output(WARNING, "Unknown Output Type")
 		output(RESULT, "Output Types:\n- " + "\n- ".join(types))
 		break
+	elif primary_sig:
+		output(WARNING, "Ignoring Potentially Malicious Keys Structure")
 
 # if the public key which signed the verification blob was not found, bail out
 if key_hash == None:
